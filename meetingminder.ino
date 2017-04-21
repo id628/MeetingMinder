@@ -15,7 +15,6 @@ int buzzer = D0;
 int attempts = 0;
 
 
-
 // The code in setup() runs once when the device is powered on or reset. Used for setting up states, modes, etc
 void setup() {
     // Tell b to get everything ready to go
