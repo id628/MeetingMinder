@@ -20,7 +20,6 @@ debug = 1
 # MQTT
 mqtt_server = "192.168.210.77"
 
-import json
 import traceback
 import httplib2
 import os
@@ -33,7 +32,7 @@ from oauth2client import tools
 from oauth2client.file import Storage
 
 try:
-    import paho.mqtt.publish as publish  # MQTT support is future
+    from paho.mqtt.publish import single
 except ImportError:
     mqtt = False
 else:
@@ -46,9 +45,9 @@ import json
 import requests
 
 try:
-    import argparse
+    from argparse import ArgumentParser
 
-    flags = argparse.ArgumentParser(parents=[tools.argparser]).parse_args()
+    flags = ArgumentParser(parents=[tools.argparser]).parse_args()
 except ImportError:
     flags = None
 
@@ -105,20 +104,21 @@ def send(where, what, when):
     # push to mqtt if it's configured
     if mqtt:
         try:
-            publish.single("gcal/" + where + "/LEDstring", payload=what, hostname=mqtt_server, qos=1)
+            single("gcal/" + where + "/LEDstring", payload=what, hostname=mqtt_server, qos=1)
         except:
             # If you've configured MQTT and are having problems, here's a good place for debug statements
             print("Failed to send to MQTT: ", traceback.format_exc())
             pass
 
     # Send to Particle cloud, where each room might have multiple Particle InternetButton devices
+    # -uses Particle REST API (https://docs.particle.io/reference/api/)
     if where in particle["particles"]:
         for p in particle["particles"][where].split(','):
             try:
-                print("Particle: ", where, p)
+                if debug: print("Particle: ", where, p)
                 r = requests.post('https://api.particle.io/v1/devices/%s/LEDs' % p,
                                   data={'args': what, 'access_token': particle["accessToken"]})
-            ##              print("Particle returned: ", r.text)
+                if r.status_code != 200: print("Particle returned: ", r.text)
             except:
                 print("ERR: Particle Cloud POST failed")
 
@@ -138,6 +138,7 @@ def main():
     10 events on the user's calendar.
     """
 
+    global err
     credentials = get_credentials()
     http = credentials.authorize(httplib2.Http())
 
@@ -148,7 +149,7 @@ def main():
         try:
             service = discovery.build('calendar', 'v3', http=http)
         except:
-            err = traceback.format_exc()  # Save tje error message to print out
+            err = traceback.format_exc()  # Save the error message to print out
             print("GCal API Connect failed: waiting ", t, " seconds")
             time.sleep(t)  ##Wait t seconds before trying again
         else:
@@ -159,7 +160,7 @@ def main():
     if (not success):
         print("ERR: Failed to connect to Google Calendar API: ", err)
         sendAllP()  # Error code to Particles
-        quit  # No sense continuing if GCal won't answer
+        quit(99)  #No sense continuing if GCal won't answer
 
     # We have a connection to GCal, let's query it for Events!
     page_token = None
