@@ -230,7 +230,6 @@ def main():
                 # Is a Meeting is coming up very soon?
                 if now < start:
                     hl = int((start - now).total_seconds() / 60) + 1
-                    nxtEvent = eventName
 
                     if debug:
                         print("Calendar ", calName, " entry ", eventName, " is coming up in ", hl, " minutes")
