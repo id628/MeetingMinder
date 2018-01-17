@@ -1,6 +1,6 @@
 from __future__ import print_function
 
-debug = 1
+debug = 9
 
 ## This program scans a particular user'ss Google Calendars to find entries
 ## that are currently happening or about to happen - the idea is to feed
@@ -174,6 +174,9 @@ def main():
 
             # Let's only scan those we care about, saving API calls:
             if calName not in particle["particles"]:
+                if (debug>5):
+                    print("DEBUG: Skipping calendar " + calendar_list_entry['summary'] +
+                          " because it's not on our watchlist")
                 continue
 
             # A bit more setup of variables we'll need below
